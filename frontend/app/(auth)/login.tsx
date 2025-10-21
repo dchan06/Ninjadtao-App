@@ -1,10 +1,12 @@
 import React from "react";
 import { SafeAreaView, StyleSheet, Text } from "react-native";
   
-export default function App() {
+
+
+export default function login() {
     return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>Page 1!</Text>
+      <Text style={styles.text}>Page 2!</Text>
       </SafeAreaView>
     );
 }
