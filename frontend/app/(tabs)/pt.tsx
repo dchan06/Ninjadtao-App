@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Button, Image, SafeAreaView, StyleSheet, Text, View } from "react-native";
   
-export default function App() {
+export default function Pt() {
 const router = useRouter(); 
     return (
     <SafeAreaView style={styles.container}>
