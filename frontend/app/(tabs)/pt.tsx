@@ -1,24 +1,15 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Button, Image, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Button, SafeAreaView, StyleSheet, View } from "react-native";
   
 export default function Pt() {
 const router = useRouter(); 
     return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Image
-          source={require("@/assets/images/Njd-Logo.png")}
-          style={styles.logo}
-        /> 
-        <Text style = {styles.header}>Ninjadtao Muay Thai Gym </Text>
-      </View>
 
       {/* BODY */}
       <View style={styles.body}>
-        <Text style={styles.text}>Username: </Text>
-        <Text style ={styles.text}>Email: </Text>
+        
       </View>
 
       <Button title="Go to Login" onPress={() => router.push("/(auth)/login")} />
