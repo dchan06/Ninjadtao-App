@@ -1,5 +1,4 @@
-import { ProfileButton } from '@/lib/my_nav_buttons';
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React from "react";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 
@@ -7,21 +6,22 @@ import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 export default function Booking() {
 const router = useRouter(); 
     return (
-    <SafeAreaView style={styles.container}>
-        {/*PROFILE BUTTON*/}
-        <View style={styles.profile}>
-            <ProfileButton />
-        </View>
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style = {styles.header}>Booking </Text>
-      </View>
+    <SafeAreaView style={styles.container}> 
+        <Stack.Screen
+        options={{
+          title: "Profile",           // title at top
+          headerBackTitle: "Home",    // 👈 back button text
+        }}
+      />
 
       {/* BODY */}
       <View style={styles.body}>
-        <Text style={styles.text}>Username: </Text>
-        <Text style ={styles.text}>Email: </Text>
+        <Text style={styles.text}>Name: </Text>
+        <Text style ={styles.text}>Email Address: </Text>
+        <Text style ={styles.text}>Password: ********</Text>
+        <Text style ={styles.text}>Membership Type: </Text>
+        <Text style ={styles.text}>Membership Expiry Date: </Text>
+        <Text style ={styles.text}>Date Joined: </Text>
       </View>
       </SafeAreaView>
     );
@@ -62,6 +62,3 @@ const styles = StyleSheet.create({
       marginVertical: 5,
     },
 });
-  
-
-

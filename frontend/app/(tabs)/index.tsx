@@ -21,8 +21,6 @@ const router = useRouter();
         <Text style ={styles.text}>Email: </Text>
       </View>
 
-
-
       <Button title="Go to Login" onPress={() => router.push("/(auth)/login")} />
       </SafeAreaView>
     );
