@@ -12,7 +12,7 @@ const router = useRouter();
         
       </View>
 
-      <Button title="Go to Login" onPress={() => router.push("/(auth)/login")} />
+      <Button title="Go to Login" onPress={() => router.push("../login")} />
       </SafeAreaView>
     );
 }

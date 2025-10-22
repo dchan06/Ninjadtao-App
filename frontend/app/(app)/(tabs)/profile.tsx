@@ -1,7 +1,8 @@
 import { style } from "@/lib/style";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, SafeAreaView, Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Booking() {
 const router = useRouter(); 

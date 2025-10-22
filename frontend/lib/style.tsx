@@ -11,18 +11,18 @@ export const style = StyleSheet.create({
         zIndex: 10,           // ensures it's above other elements
     },
     header: {
-      alignItems:'center',
-      paddingHorizontal:15, 
-      paddingVertical:2, 
-      backgroundColor: '#fff', 
-      fontSize: 23,
-      fontWeight: 'bold',
+        alignItems:'center',
+        paddingHorizontal:15, 
+        paddingVertical:10,
+        backgroundColor:'#9e9e9eff',
+        fontSize:23,
+        fontWeight:'bold',
     },
     body: {
-      flex:1,
       alignItems:'flex-start',
       justifyContent: 'flex-start', 
       paddingHorizontal:20,
+      paddingVertical: 10,
     },
     logo: {
     width: 75,
