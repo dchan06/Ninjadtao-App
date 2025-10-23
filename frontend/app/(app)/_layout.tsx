@@ -1,5 +1,5 @@
 // app/(app)/_layout.tsx
-import { Slot, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -17,7 +17,7 @@ export default function AppLayout() {
         }
       } catch (err) {
         console.log("Error checking login:", err);
-        router.replace("/(auth)/login");
+        router.replace("../../(auth)/login");
       } finally {
         setLoading(false);
       }
@@ -30,7 +30,5 @@ export default function AppLayout() {
         <ActivityIndicator size="large" />
       </View>
     );
-  }
-
-  return <Slot />; // Render app pages
+}
 }
