@@ -1,13 +1,78 @@
-from django.shortcuts import render
+#from django.shortcuts import render
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from . models import *
+from . serializer import * 
+
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 # Create your views here.
+class EmailTokenObtainPairView(TokenObtainPairView):
+    serializer_class = EmailTokenObtainPairSerializer
+
 
 class TestView(APIView):
-    def get(self, request, format =None):
+    def get(self, request):
         print("API was called")
-        return Response("Hello World!", status = 200)
+        return Response("Hello World!", status=200)
+       
+#localhost:8000/api/v1.0/user/test/
 
-#localhost:8000/api/v1.0/user/test
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        user = authenticate(username=email, password=password)
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key, "username": user.username}, status = 200)
+        else:
+            return Response({f"error": "Invalid credentials. email: {email}"}, status=400)
+#localhost:8000/api/v1.0/user/login
+
+class AuthView(APIView): 
+    def post(self, request): 
+        token_key = request.data.get("token") 
+        try: 
+            token = Token.objects.get(key=token_key) 
+            user = token.user
+            output = [{"email" : user.email, 
+                   "first_name": user.first_name, 
+                   "last_name": user.last_name, 
+                   "Membership Type": user.membershipType, 
+                   "Membership Name": user.get_membershipName_display()} ] 
+            return Response({output}, status=200) 
+        except Token.DoesNotExist: 
+            return Response({"error": "Invalid token"}, status=400)
+
+class UserView(APIView):
+    def post(self, request):
+        email = request.data.get("email")       # getting an email to tell which user's info to print
+        user = userModel.objects.filter(email=email).first()
+
+        if not user:
+            return Response({"error": "User not found"}, status=404)
+
+        output = [{"email" : user.email, 
+                   "first_name": user.first_name, 
+                   "last_name": user.last_name, 
+                   "Membership Type": user.membershipType, 
+                   "Membership Name": user.get_membershipName_display()} ]
+        
+        return Response(output, status=200)
+    
+
+
+class BookingView(APIView): 
+
+         
+    def post(self, request): 
+        serializer = BookingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
