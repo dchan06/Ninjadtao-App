@@ -9,7 +9,7 @@ export default function RootLayout() {
     const checkLogin = async () => {
       const access = await SecureStore.getItemAsync("access");
       if (!access){
-        router.replace("/(auth)");
+        router.replace("../(drawer)");
       }
       else{
         router.replace("../(drawer)");

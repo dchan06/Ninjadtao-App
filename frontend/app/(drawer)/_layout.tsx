@@ -1,3 +1,4 @@
+import { BebasNeue_400Regular, useFonts } from '@expo-google-fonts/bebas-neue';
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerItemList } from "@react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
@@ -16,7 +17,7 @@ function CustomDrawerContent(props: any) {
         }}
       >
         <Image
-          source={require("@/assets/images/Njd-Logo.png")} 
+          source={require("@/assets/images/Njd-Logo.png")}
           style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 10 }}
         />
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>John Doe</Text>
@@ -34,7 +35,7 @@ function CustomDrawerContent(props: any) {
           paddingVertical: 20,
           alignItems: "center",
           borderTopWidth: 1,
-          borderColor: "#ddd",
+          borderColor: "#ddddddff",
         }}
       >
         <Text style={{ color: "#999", fontSize: 14 }}>Ninjadtao Muay Thai Gym</Text>
@@ -44,6 +45,15 @@ function CustomDrawerContent(props: any) {
 }
 
 export default function DrawerLayout() {
+  // Load Bebas Neue font
+  const [fontsLoaded] = useFonts({
+    BebasNeue_400Regular,
+  });
+
+  if (!fontsLoaded) {
+    return null; // wait until font loads
+  }
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -58,6 +68,13 @@ export default function DrawerLayout() {
         name="index"
         options={{
           title: "Profile",
+          headerStyle: { backgroundColor: "#eecb7eff" },
+          headerTintColor: "#333",
+          headerTitleStyle: {
+            fontFamily: "BebasNeue_400Regular",
+            fontSize: 26,
+            color: "#333",
+          },
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
@@ -67,13 +84,34 @@ export default function DrawerLayout() {
         name="(group)"
         options={{
           title: "Group Classes",
+          headerStyle: { backgroundColor: "#eecb7eff" },
+          headerTintColor: "#333",
+          headerTitleStyle: {
+            fontFamily: "BebasNeue_400Regular",
+            fontSize: 26,
+            color: "#333",
+          },
           drawerIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
-      
+      <Drawer.Screen
+        name="events"
+        options={{
+          title: " Events",
+          headerStyle: { backgroundColor: "#eecb7eff" },
+          headerTintColor: "#333",
+          headerTitleStyle: {
+            fontFamily: "BebasNeue_400Regular",
+            fontSize: 26,
+            color: "#333",
+          },
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
     </Drawer>
   );
 }
-
