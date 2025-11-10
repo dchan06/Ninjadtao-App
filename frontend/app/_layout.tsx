@@ -1,6 +1,6 @@
 import { Slot, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { jwtDecode } from "jwt-decode";
+import  jwtDecode  from "jwt-decode";
 import { useEffect } from "react";
 
 export default function RootLayout() {

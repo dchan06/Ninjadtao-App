@@ -9,6 +9,7 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
+    Pressable,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -35,9 +36,24 @@ export default function Events() {
   const animOpacity = useRef(new Animated.Value(0)).current;
   const animScale = useRef(new Animated.Value(0.95)).current;
   const photoScale = useRef(new Animated.Value(1)).current;
-  const swipeAnim = useRef(new Animated.Value(1)).current; // for breathing effect
+
+  const swipeScale = useRef(new Animated.Value(1)).current; // Breathing animation
+  const swipeOpacity = useRef(new Animated.Value(1)).current;
+  const hideSwipeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flatRef = useRef<FlatList<PhotoItem> | null>(null);
+
+  const resetSwipeTimer = () => {
+    if (!isDetailOpen) {
+      Animated.timing(swipeOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    }
+
+    if (hideSwipeTimeout.current) clearTimeout(hideSwipeTimeout.current);
+
+    hideSwipeTimeout.current = setTimeout(() => {
+      Animated.timing(swipeOpacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
+    }, 6000);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -51,22 +67,23 @@ export default function Events() {
     };
     load();
 
-    // Synchronized breathing animation duration
-    const duration = 2000;
-
-    // Synchronized breathing animation for photo and swipe hint
+    // Photo breathing
     Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(photoScale, { toValue: 1.03, duration, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(swipeAnim, { toValue: 0.5, duration, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ]),
-        Animated.parallel([
-          Animated.timing(photoScale, { toValue: 1, duration, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-          Animated.timing(swipeAnim, { toValue: 1, duration, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        ]),
+        Animated.timing(photoScale, { toValue: 1.03, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(photoScale, { toValue: 1, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
       ])
     ).start();
+
+    // Swipe hint breathing
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(swipeScale, { toValue: 1.2, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(swipeScale, { toValue: 1, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    ).start();
+
+    resetSwipeTimer();
   }, []);
 
   const openDetail = (index: number) => {
@@ -96,121 +113,125 @@ export default function Events() {
   }).current;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Gallery */}
-      <FlatList
-        ref={flatRef}
-        data={photos}
-        keyExtractor={(_, i) => String(i)}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity activeOpacity={1} onPress={() => openDetail(index)} style={styles.imageContainer}>
-            {/* Blurred background */}
-            <View style={styles.backgroundOverlay}>
-              <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFillObject} blurRadius={20} resizeMode="cover" />
-            </View>
+    <Pressable style={{ flex: 1 }} onPress={resetSwipeTimer}>
+      <SafeAreaView style={styles.safe}>
+        <FlatList
+          ref={flatRef}
+          data={photos}
+          keyExtractor={(_, i) => String(i)}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+          onScrollBeginDrag={resetSwipeTimer}
+          onTouchStart={resetSwipeTimer}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity activeOpacity={1} onPress={() => openDetail(index)} style={styles.imageContainer}>
+              <View style={styles.backgroundOverlay}>
+                <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFillObject} blurRadius={20} resizeMode="cover" />
+              </View>
 
-            {/* Soft 3D shadows */}
-            <View style={[styles.shadowLayer, { width: width * 0.92, height: height * 0.72, left: -6, backgroundColor: 'rgba(60,60,60,0.24)' }]} />
-            <View style={[styles.shadowLayer, { width: width * 0.92, height: height * 0.72, right: -6, backgroundColor: 'rgba(40,40,40,0.18)' }]} />
-            <View style={[styles.shadowLayer, { width: width * 0.92, height: height * 0.72, top: 6, backgroundColor: 'rgba(30,30,30,0.12)' }]} />
+              <View style={[styles.shadowLayer, { width: width * 0.92, height: height * 0.72, left: -6, backgroundColor: 'rgba(60,60,60,0.24)' }]} />
+              <View style={[styles.shadowLayer, { width: width * 0.92, height: height * 0.72, right: -6, backgroundColor: 'rgba(40,40,40,0.18)' }]} />
+              <View style={[styles.shadowLayer, { width: width * 0.92, height: height * 0.72, top: 6, backgroundColor: 'rgba(30,30,30,0.12)' }]} />
 
-            {/* Main photo */}
-            <Animated.Image
-              source={{ uri: item.uri }}
-              style={[styles.image, { transform: [{ scale: photoScale }] }]}
-              resizeMode="cover"
-            />
-
-            {/* Swipe hint above date box */}
-            {photos.length > 1 && (
-              <Animated.View style={[styles.swipeHintTop, { opacity: swipeAnim }]}>
-                <Text style={styles.swipeArrow}>‹‹</Text>
-                <Text style={styles.swipeText}>Swipe</Text>
-                <Text style={styles.swipeArrow}>››</Text>
-              </Animated.View>
-            )}
-
-            {/* Date overlay */}
-            <View style={styles.dateOverlayContainer}>
-              <TextInput
-                style={styles.dateInput}
-                value={item.date}
-                onChangeText={(t) => updatePhotoField(index, { date: t })}
-                placeholder="DD-MM-YYYY"
-                placeholderTextColor="rgba(255,255,255,0.7)"
+              <Animated.Image
+                source={{ uri: item.uri }}
+                style={[styles.image, { transform: [{ scale: photoScale }] }]}
+                resizeMode="cover"
               />
-            </View>
-          </TouchableOpacity>
-        )}
-      />
 
-      {/* Details modal */}
-      <Modal visible={isDetailOpen} transparent statusBarTranslucent animationType="none">
-        <View style={styles.detailBackdrop}>
-          <Animated.View style={[styles.detailCard, { opacity: animOpacity, transform: [{ scale: animScale }] }]}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-              <ScrollView contentContainerStyle={styles.detailScroll}>
-                <Image source={{ uri: photos[currentIndex]?.uri }} style={styles.detailImage} resizeMode="cover" />
+              {photos.length > 1 && (
+                <Animated.View
+                  style={[
+                    styles.swipeHintTop,
+                    { transform: [{ scale: swipeScale }], opacity: swipeOpacity },
+                  ]}
+                >
+                  <Text style={styles.swipeArrow}>‹‹</Text>
+                  <Text style={styles.swipeText}>Swipe</Text>
+                  <Text style={styles.swipeArrow}>››</Text>
+                </Animated.View>
+              )}
 
-                <Text style={styles.sectionLabel}>Date</Text>
+              <View style={styles.dateOverlayContainer}>
                 <TextInput
-                  style={styles.fieldInput}
-                  value={photos[currentIndex]?.date}
-                  onChangeText={(t) => updatePhotoField(currentIndex, { date: t })}
+                  style={styles.dateInput}
+                  value={item.date}
+                  onChangeText={(t) => updatePhotoField(index, { date: t })}
                   placeholder="DD-MM-YYYY"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  placeholderTextColor="rgba(255,255,255,0.7)"
                 />
+              </View>
+            </TouchableOpacity>
+          )}
+        />
 
-                <Text style={styles.sectionLabel}>Time</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={photos[currentIndex]?.time}
-                  onChangeText={(t) => updatePhotoField(currentIndex, { time: t })}
-                  placeholder="HH:MM - HH:MM"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
-                />
+        <Modal visible={isDetailOpen} transparent statusBarTranslucent animationType="none">
+          <View style={styles.detailBackdrop}>
+            <Animated.View style={[styles.detailCard, { opacity: animOpacity, transform: [{ scale: animScale }] }]}>
+              <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+                <ScrollView contentContainerStyle={styles.detailScroll}>
+                  <Image source={{ uri: photos[currentIndex]?.uri }} style={styles.detailImage} resizeMode="cover" />
 
-                <Text style={styles.sectionLabel}>Description</Text>
-                <TextInput
-                  style={styles.descriptionInput}
-                  value={photos[currentIndex]?.description}
-                  onChangeText={(t) => updatePhotoField(currentIndex, { description: t })}
-                  placeholder="Enter event description..."
-                  placeholderTextColor="rgba(255,255,255,0.5)"
-                  multiline
-                />
+                  <Text style={styles.sectionLabel}>Date</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={photos[currentIndex]?.date}
+                    onChangeText={(t) => updatePhotoField(currentIndex, { date: t })}
+                    placeholder="DD-MM-YYYY"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
+                  />
 
-                <TouchableOpacity onPress={closeDetail} style={styles.closeButton}>
-                  <Text style={styles.closeButtonText}>Done</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </Animated.View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+                  <Text style={styles.sectionLabel}>Time</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={photos[currentIndex]?.time}
+                    onChangeText={(t) => updatePhotoField(currentIndex, { time: t })}
+                    placeholder="HH:MM - HH:MM"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
+                  />
+
+                  <Text style={styles.sectionLabel}>Description</Text>
+                  <TextInput
+                    style={styles.descriptionInput}
+                    value={photos[currentIndex]?.description}
+                    onChangeText={(t) => updatePhotoField(currentIndex, { description: t })}
+                    placeholder="Enter event description..."
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                    multiline
+                  />
+
+                  {/* Buy Ticket Button */}
+                  <TouchableOpacity 
+                    onPress={() => console.log("Buy Ticket pressed")} 
+                    style={[styles.closeButton, { backgroundColor: "#28a745", marginBottom: 12 }]}
+                  >
+                    <Text style={styles.closeButtonText}>Buy Ticket</Text>
+                  </TouchableOpacity>
+
+                  {/* Done Button */}
+                  <TouchableOpacity onPress={closeDetail} style={styles.closeButton}>
+                    <Text style={styles.closeButtonText}>Done</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </KeyboardAvoidingView>
+            </Animated.View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#1c1c1c" },
   imageContainer: { width, height, justifyContent: "center", alignItems: "center" },
-
-  // Main photo
   image: { width: width * 0.92, height: height * 0.72, zIndex: 4, borderRadius: 16 },
-
-  // Shadows
   shadowLayer: { position: "absolute", borderRadius: 16, zIndex: 1 },
-
-  // Blurred background
   backgroundOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "#111", zIndex: 0 },
 
-  // Swipe hint above date
   swipeHintTop: {
     position: "absolute",
     top: 75,
@@ -222,7 +243,6 @@ const styles = StyleSheet.create({
   swipeArrow: { color: "#aaa", fontSize: 20, fontWeight: "700", marginHorizontal: 4 },
   swipeText: { color: "#aaa", fontSize: 18, fontWeight: "600" },
 
-  // Date overlay
   dateOverlayContainer: {
     position: "absolute",
     top: 20,
@@ -239,7 +259,6 @@ const styles = StyleSheet.create({
   },
   dateInput: { color: "#fff", fontSize: 20, fontWeight: "700", textAlign: "center", minWidth: 140 },
 
-  // Modal
   detailBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -254,6 +273,6 @@ const styles = StyleSheet.create({
   sectionLabel: { color: "#aaa", fontSize: 14, marginTop: 18, paddingHorizontal: 16 },
   fieldInput: { color: "#fff", fontSize: 16, padding: 12, marginHorizontal: 16, marginTop: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 8 },
   descriptionInput: { minHeight: 120, color: "#fff", fontSize: 16, padding: 12, marginHorizontal: 16, marginTop: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 8, textAlignVertical: "top" },
-  closeButton: { marginTop: 22, alignSelf: "center", backgroundColor: "#007aff", paddingHorizontal: 18, paddingVertical: 12, borderRadius: 10, marginBottom: 36 },
+  closeButton: { marginTop: 22, alignSelf: "center", paddingHorizontal: 18, paddingVertical: 12, borderRadius: 10, marginBottom: 36, backgroundColor: "#007aff" },
   closeButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
