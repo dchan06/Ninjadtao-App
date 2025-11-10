@@ -1,7 +1,7 @@
 import { LogoutButton } from "@/lib/functions";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface UserProfile {
@@ -11,7 +11,6 @@ interface UserProfile {
   membership_name?: string;
 }
 
-// Use your original local backend URL
 const BASE_URL = "http://localhost:8000";
 
 export default function Profile() {
@@ -35,11 +34,9 @@ export default function Profile() {
         setLoading(false);
       }
     };
-
     loadProfile();
   }, []);
 
-  // Fetch user data using the access token
   const fetchUserData = async (jwt: string) => {
     try {
       const response = await fetch(`${BASE_URL}/api/v1.0/user/auth/`, {
@@ -50,20 +47,13 @@ export default function Profile() {
         },
       });
 
-      // If token expired, try refreshing
       if (response.status === 401) {
-        console.log("Access token expired — trying to refresh...");
         const newToken = await refreshAccessToken();
-        if (newToken) {
-          return fetchUserData(newToken); // Retry once
-        } else {
-          throw new Error("Session expired. Please log in again.");
-        }
+        if (newToken) return fetchUserData(newToken);
+        throw new Error("Session expired. Please log in again.");
       }
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch user data");
-      }
+      if (!response.ok) throw new Error("Failed to fetch user data");
 
       const data = await response.json();
       setUserData(data);
@@ -75,14 +65,10 @@ export default function Profile() {
     }
   };
 
-  // Refresh the access token using the stored refresh token
   const refreshAccessToken = async (): Promise<string | null> => {
     try {
       const refresh = await SecureStore.getItemAsync("refresh");
-      if (!refresh) {
-        console.warn("No refresh token found");
-        return null;
-      }
+      if (!refresh) return null;
 
       const response = await fetch(`${BASE_URL}/api/token/refresh/`, {
         method: "POST",
@@ -90,85 +76,95 @@ export default function Profile() {
         body: JSON.stringify({ refresh }),
       });
 
-      if (!response.ok) {
-        console.error("Refresh token request failed:", response.status);
-        return null;
-      }
+      if (!response.ok) return null;
 
       const data = await response.json();
       const newAccess = data.access;
       await SecureStore.setItemAsync("access", newAccess);
-      console.log("Access token refreshed successfully!");
       return newAccess;
-    } catch (err) {
-      console.error("Error refreshing token:", err);
+    } catch {
       return null;
     }
   };
 
-  // Render logic
-  if (loading) {
+  if (loading)
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007bff" />
         <Text>Loading profile...</Text>
       </View>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <View style={styles.centered}>
         <Text style={{ color: "red" }}>{error}</Text>
       </View>
     );
-  }
 
-  if (!userData) {
+  if (!userData)
     return (
       <View style={styles.centered}>
         <Text>No user data found</Text>
       </View>
     );
-  }
 
-  console.log("User Data:", userData);
-
-  
-  // --- Main UI ---
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.profileCard}>
-          <Text style={styles.title}>Profile</Text>
+        {/* Scrollable content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Card */}
+          <View style={styles.profileCard}>
+            <Text style={styles.title}>Profile</Text>
 
-          <View style={styles.infoItem}>
-            <Text style={styles.label}>Email</Text>
-            <Text style={styles.value}>{userData.email}</Text>
+            <View style={styles.infoItem}>
+              <Text style={styles.label}>Email</Text>
+              <Text style={styles.value}>{userData.email}</Text>
+            </View>
+
+            {userData.first_name && (
+              <View style={styles.infoItem}>
+                <Text style={styles.label}>Name</Text>
+                <Text style={styles.value}>
+                  {userData.first_name + " " + userData.last_name}
+                </Text>
+              </View>
+            )}
+
+            {userData.membership_name && (
+              <View style={styles.infoItem}>
+                <Text style={styles.label}>Membership</Text>
+                <Text style={styles.value}>{userData.membership_name}</Text>
+              </View>
+            )}
+
+            <View style={styles.infoItem}>
+              <Text style={styles.label}>Date Joined</Text>
+              <Text style={styles.value}>—</Text>
+            </View>
           </View>
 
-          {userData.first_name && (
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Name</Text>
-              <Text style={styles.value}>
-                {userData.first_name + " " + userData.last_name}
-              </Text>
-            </View>
-          )}
-
-          {userData.membership_name && (
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Membership</Text>
-              <Text style={styles.value}>{userData.membership_name}</Text>
-            </View>
-          )}
-
-          <View style={styles.infoItem}>
-            <Text style={styles.label}>Date Joined</Text>
-            <Text style={styles.value}>—</Text>
+          {/* Booked Classes Card */}
+          <View style={styles.profileCard}>
+            <Text style={styles.title}>Booked Classes</Text>
+            <Text style={styles.eventItem}>• Yoga Class - 10:00 AM</Text>
+            <Text style={styles.eventItem}>• Pilates - 2:00 PM</Text>
+            <Text style={styles.eventItem}>• Spin Class - 5:00 PM</Text>
           </View>
-        </View>
 
+          {/* Booked Events Card */}
+          <View style={styles.profileCard}>
+            <Text style={styles.title}>Booked Events</Text>
+            <Text style={styles.eventItem}>• Workshop: Mindfulness - 1/12/2025</Text>
+            <Text style={styles.eventItem}>• Webinar: Nutrition Tips - 5/12/2025</Text>
+          </View>
+        </ScrollView>
+
+        {/* Logout Button fixed at bottom */}
         <View style={styles.footer}>
           <LogoutButton />
         </View>
@@ -178,15 +174,9 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  container: {
-    flex: 1,
-    justifyContent: "space-between",
-    padding: 20,
-  },
+  safeArea: { flex: 1, backgroundColor: "#f8f9fa" },
+  container: { flex: 1, justifyContent: "space-between", padding: 20 },
+  scrollContent: { paddingBottom: 20 }, // spacing for scroll
   profileCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -196,42 +186,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginTop: 16,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    marginBottom: 16,
-    color: "#333",
-  },
-  infoItem: {
-    marginBottom: 14,
-  },
-  label: {
-    fontSize: 14,
-    color: "#777",
-  },
-  value: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#111",
-  },
-  footer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingText: {
-    marginTop: 10,
-    color: "#555",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 16,
-  },
+  title: { fontSize: 22, fontWeight: "600", marginBottom: 16, color: "#333" },
+  infoItem: { marginBottom: 14 },
+  label: { fontSize: 14, color: "#777" },
+  value: { fontSize: 16, fontWeight: "500", color: "#111" },
+  footer: { alignItems: "center", marginTop: 10 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
+  eventItem: { paddingVertical: 4, fontSize: 14, color: "#111" },
 });
+
 
 
