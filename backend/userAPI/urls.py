@@ -1,16 +1,16 @@
 from django.urls import path
 
-from .views import UserView
 from .views import TestView
 from .views import EmailTokenObtainPairView
 from .views import AuthView
+from .views import ClassesView
 
 
 urlpatterns = [
     path('test/', TestView.as_view()),
     path('login/', EmailTokenObtainPairView.as_view(), name='email_login'),
     path('auth/', AuthView.as_view()),
-    path('profile/', UserView.as_view()),
+    path('classes/', ClassesView.as_view()),
 ]
 
 

@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+const BASE_URL = "http://localhost:8000/api/v1.0/user";
 
 export default function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -18,9 +20,13 @@ export default function App() {
 /* -------------------- CLASS PICKER -------------------- */
 
 interface ClassItem {
-  id: string;
-  title: string;
-  time: string;
+  classId: number;
+  class_name: string;
+  class_description: string;
+  class_date: string;
+  class_start_time: string;
+  class_end_time: string;
+  instructor_name: string;
 }
 
 interface ClassPickerProps {
@@ -28,93 +34,85 @@ interface ClassPickerProps {
 }
 
 export function ClassPicker({ selectedDate }: ClassPickerProps) {
-  const [bookedClasses, setBookedClasses] = useState<string[]>([]);
-  const [holding, setHolding] = useState<string | null>(null);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [bookedClasses, setBookedClasses] = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Sample classes
-  const allClasses: Record<number, ClassItem[]> = {
-    0: [{ id: "1", title: "Sunday Recovery", time: "10:00 - 11:00 AM" }],
-    1: [
-      { id: "1", title: "Muay Thai Fundamentals", time: "08:00 - 09:00 AM" },
-      { id: "2", title: "Advanced Muay Thai", time: "09:30 - 10:30 AM" },
-    ],
-    2: [
-      { id: "3", title: "Pad Work", time: "11:00 - 12:00 PM" },
-      { id: "4", title: "Sparring", time: "01:00 - 02:30 PM" },
-    ],
-    3: [
-      { id: "5", title: "Conditioning", time: "06:00 - 07:00 PM" },
-      { id: "6", title: "Technique Drills", time: "07:30 - 08:30 PM" },
-    ],
-    4: [
-      { id: "7", title: "Clinching Techniques", time: "05:00 - 06:00 PM" },
-      { id: "8", title: "Muay Thai Combinations", time: "06:30 - 07:30 PM" },
-    ],
-    5: [
-      { id: "9", title: "Power Kicks", time: "10:00 - 11:00 AM" },
-      { id: "10", title: "Defensive Strategies", time: "11:30 - 12:30 PM" },
-    ],
+  const fetchClasses = async () => {
+    setLoading(true);
+    try {
+      const dateString = selectedDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      const response = await fetch(`http://localhost:8000/api/v1.0/user/classes/?date=${dateString}`);
+      const data = await response.json();
+      setClasses(data); // assumes backend returns list of serialized Classes
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const weekday = selectedDate.getDay();
-  const classes = allClasses[weekday] || [];
+  useEffect(() => {
+    fetchClasses();
+  }, [selectedDate]);
 
-  const handleBook = (id: string) => {
+  const handleBook = (id: number) => {
     setBookedClasses((prev) => [...prev, id]);
     console.log(`Booked class ID: ${id} on ${selectedDate.toDateString()}`);
   };
 
-  const handleCancel = (id: string) => {
+  const handleCancel = (id: number) => {
     setBookedClasses((prev) => prev.filter((classId) => classId !== id));
     console.log(`Cancelled class ID: ${id}`);
   };
 
   const renderItem = ({ item }: { item: ClassItem }) => {
-    const isBooked = bookedClasses.includes(item.id);
-    const isHolding = holding === item.id;
+    const isBooked = bookedClasses.includes(item.classId);
 
     return (
       <View style={styles.classCard}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.classTitle}>{item.title}</Text>
-          <Text style={styles.classTime}>{item.time}</Text>
+          <Text style={styles.classTitle}>{item.class_name}</Text>
+          <Text style={styles.classTime}>
+            {item.class_start_time} - {item.class_end_time} 
+          </Text>
+          <Text style={styles.classTime}>
+             Instructor: {item.instructor_name}
+          </Text>
         </View>
-
         <TouchableOpacity
           style={[
             styles.bookButton,
             isBooked && styles.bookedButton,
-            isBooked && isHolding && { backgroundColor: "#ff4444" },
           ]}
-          onPress={() => !isBooked && handleBook(item.id)}
-          onLongPress={() => handleCancel(item.id)}
-          delayLongPress={2000}
-          onPressIn={() => isBooked && setHolding(item.id)}
-          onPressOut={() => setHolding(null)}
+          onPress={() => !isBooked && handleBook(item.classId)}
+          onLongPress={() => handleCancel(item.classId)}
         >
-          <Text style={styles.bookButtonText}>
-            {isBooked ? (isHolding ? "Hold to cancel..." : "Booked") : "Book"}
-          </Text>
+          <Text style={styles.bookButtonText}>{isBooked ? "Booked" : "Book"}</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.classesContainer}>
+    <View style={styles.classesContainer}>
       <Text style={styles.dateHeader}>{selectedDate.toDateString()}</Text>
-      <FlatList
-        data={classes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No classes available for this date.</Text>
-        }
-      />
-    </SafeAreaView>
+      {loading ? (
+        <Text>Loading classes...</Text>
+      ) : classes.length === 0 ? (
+        <Text style={styles.emptyText}>No classes available for this date.</Text>
+      ) : (
+        <FlatList
+          data={classes}
+          keyExtractor={(item) => item.classId.toString()}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
   );
 }
+
 
 /* -------------------- DATE PICKER -------------------- */
 
@@ -177,7 +175,9 @@ const styles = StyleSheet.create({
   },
   dateContainer: {
     alignItems: "center",
-    padding: 10,
+    justifyContent: "center",
+    width: 50, // fixed width for all buttons
+    paddingVertical: 10,
     marginHorizontal: 5,
     borderRadius: 10,
     backgroundColor: "#caca1bff",

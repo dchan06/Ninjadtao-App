@@ -27,7 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
-        model = BookedClass
+        model = BookedClasses
         fields = '__all__'
 
 class ClassSerializer(serializers.ModelSerializer):

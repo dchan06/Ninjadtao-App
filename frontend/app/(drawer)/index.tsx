@@ -1,17 +1,38 @@
 import { LogoutButton } from "@/lib/functions";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+interface ClassInfo {
+  classId: number;
+  class_name: string;
+  class_description: string;
+  class_date: string;
+  instructor_name: string;
+}
+
+interface BookedClass {
+  id: number;
+  booking_date: string;
+  clasId: ClassInfo; // nested class object from Django
+}
 
 interface UserProfile {
   email: string;
   first_name?: string;
   last_name?: string;
   membership_name?: string;
+  booked_classes?: BookedClass[];
 }
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "http://localhost:8000/api/v1.0";
 
 export default function Profile() {
   const [userData, setUserData] = useState<UserProfile | null>(null);
@@ -39,7 +60,7 @@ export default function Profile() {
 
   const fetchUserData = async (jwt: string) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/v1.0/user/auth/`, {
+      const response = await fetch(`${BASE_URL}/user/auth/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,6 +108,7 @@ export default function Profile() {
     }
   };
 
+  // --- Render states ---
   if (loading)
     return (
       <View style={styles.centered}>
@@ -109,10 +131,10 @@ export default function Profile() {
       </View>
     );
 
+  // --- Main UI ---
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Scrollable content */}
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -135,32 +157,44 @@ export default function Profile() {
               </View>
             )}
 
-            {userData.membership_name && (
-              <View style={styles.infoItem}>
-                <Text style={styles.label}>Membership</Text>
-                <Text style={styles.value}>{userData.membership_name}</Text>
-              </View>
-            )}
-
             <View style={styles.infoItem}>
               <Text style={styles.label}>Date Joined</Text>
               <Text style={styles.value}>—</Text>
             </View>
           </View>
 
+          {/* Memberships Card */}
+          <View style={styles.profileCard}>
+            <Text style={styles.title}>Membership</Text>
+            {userData.membership_name ? (
+              <Text style={styles.value}>{userData.membership_name}</Text>
+            ) : (
+              <Text style={styles.label}>No active membership</Text>
+            )}
+          </View>
+
           {/* Booked Classes Card */}
           <View style={styles.profileCard}>
             <Text style={styles.title}>Booked Classes</Text>
-            <Text style={styles.eventItem}>• Yoga Class - 10:00 AM</Text>
-            <Text style={styles.eventItem}>• Pilates - 2:00 PM</Text>
-            <Text style={styles.eventItem}>• Spin Class - 5:00 PM</Text>
+            {userData.booked_classes && userData.booked_classes.length > 0 ? (
+              userData.booked_classes.map((b, index) => (
+                <View key={index} style={styles.infoItem}>
+                  <Text style={styles.value}>{b.clasId.class_name}</Text>
+                  <Text style={styles.label}>
+                    {new Date(b.clasId.class_date).toLocaleString()} —{" "}
+                    {b.clasId.instructor_name}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.label}>No booked classes</Text>
+            )}
           </View>
 
-          {/* Booked Events Card */}
+          {/* Booked Events Card (optional static example) */}
           <View style={styles.profileCard}>
             <Text style={styles.title}>Booked Events</Text>
-            <Text style={styles.eventItem}>• Workshop: Mindfulness - 1/12/2025</Text>
-            <Text style={styles.eventItem}>• Webinar: Nutrition Tips - 5/12/2025</Text>
+            <Text style={styles.label}>No booked events</Text>
           </View>
         </ScrollView>
 
@@ -176,7 +210,7 @@ export default function Profile() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f8f9fa" },
   container: { flex: 1, justifyContent: "space-between", padding: 20 },
-  scrollContent: { paddingBottom: 20 }, // spacing for scroll
+  scrollContent: { paddingBottom: 20 },
   profileCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -194,8 +228,4 @@ const styles = StyleSheet.create({
   value: { fontSize: 16, fontWeight: "500", color: "#111" },
   footer: { alignItems: "center", marginTop: 10 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
-  eventItem: { paddingVertical: 4, fontSize: 14, color: "#111" },
 });
-
-
-

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group, Permission
 from django.contrib.auth.base_user import BaseUserManager
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 
 # ----------------------------
 # Custom User Manager
@@ -29,11 +31,9 @@ class Membership (models.IntegerChoices):
     Six_Month = 3, "6 Month", 
     Ten_Credits = 4, "10 Credits",
     Twenty_Credits = 5, "20 Credits"
-    
 
 class userModel(AbstractBaseUser, PermissionsMixin):
-
-    userId = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
@@ -41,19 +41,8 @@ class userModel(AbstractBaseUser, PermissionsMixin):
         choices = Membership.choices,
         default= Membership.Monthly
     )
-    if membershipName == Membership.Monthly:
-        expiration = "1 Month"
-    elif membershipName == Membership.Three_Month:
-        expiration = "3 Month"
-    elif membershipName == Membership.Six_Month:
-        expiration = "6 Month"
-    elif membershipName == Membership.Ten_Credits:
-        credsLeft = 10
-    elif membershipName == Membership.Twenty_Credits:
-        credsLeft = 20   
-    else: 
-        membershipType = "No Membership"
-    
+    startDate = models.DateField(null=True, blank=True)
+    expirationDate = models.DateField(null=True, blank=True)
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -77,6 +66,21 @@ class userModel(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+    
+    def save(self, *args, **kwargs):
+        """Auto-calculate expiration date based on membership type."""
+        if self.startDate:
+            if self.membershipName == Membership.Monthly:
+                self.expirationDate = self.startDate + relativedelta(months=1)
+            elif self.membershipName == Membership.Three_Month:
+                self.expirationDate = self.startDate + relativedelta(months=3)
+            elif self.membershipName == Membership.Six_Month:
+                self.expirationDate = self.startDate + relativedelta(months=6)
+            elif self.membershipName == Membership.Ten_Credits:
+                self.expirationDate = self.startDate + relativedelta(months=1)
+            elif self.membershipName == Membership.Twenty_Credits:
+                self.expirationDate = self.startDate + relativedelta(months=2)
+        super().save(*args, **kwargs)
 
 # ----------------------------
 # Classes Model
@@ -85,8 +89,18 @@ class Classes(models.Model):
     classId = models.AutoField(primary_key=True)
     class_name = models.CharField(max_length=100)
     class_description = models.TextField()
-    class_date = models.DateTimeField()
+    class_date = models.DateField()
+    class_start_time = models.TimeField(default="12:00:00")
+    class_end_time = models.TimeField(null=True, blank=True)  # allow null
     instructor_name = models.CharField(max_length=100)
+
+    def save(self, *args, **kwargs):
+        if self.class_end_time is None and self.class_start_time:
+            from datetime import datetime, timedelta
+            # Convert TimeField to datetime, add 1 hour, and extract time
+            dt = datetime.combine(self.class_date, self.class_start_time) + timedelta(hours=1)
+            self.class_end_time = dt.time()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.class_name
@@ -94,10 +108,10 @@ class Classes(models.Model):
 # ----------------------------
 # Booked Classes Model
 # ----------------------------
-class BookedClass(models.Model):
-    user = models.ForeignKey(userModel, on_delete=models.CASCADE, related_name='bookings')
+class BookedClasses(models.Model):
+    userId = models.ForeignKey(userModel, on_delete=models.CASCADE, related_name='bookings')
     clasId = models.ForeignKey(Classes, on_delete=models.CASCADE, related_name='booked_users')
     booking_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.email} - {self.clasId.class_name}"
+        return f"{self.userId.email} - {self.clasId.class_name}"
