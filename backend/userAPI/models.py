@@ -32,18 +32,29 @@ class Membership (models.IntegerChoices):
     
 
 class userModel(AbstractBaseUser, PermissionsMixin):
-    MembershipTypes =  [(1, "Monthly"),
-                        ( 2, "Credits"), 
-                        (3, "PT")]
 
+    userId = models.AutoField(primary_key=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    membershipType = [] 
     membershipName = models.IntegerField(
         choices = Membership.choices,
         default=Membership.Monthly 
     )
+    if membershipName == Membership.Monthly:
+        expiration = "1 Month"
+    elif membershipName == Membership.Three_Month:
+        expiration = "3 Month"
+    elif membershipName == Membership.Six_Month:
+        expiration = "6 Month"
+    elif membershipName == Membership.Ten_Credits:
+        credsLeft = 10
+    elif membershipName == Membership.Twenty_Credits:
+        credsLeft = 20   
+    else: 
+        membershipType = "No Membership"
+    
+
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

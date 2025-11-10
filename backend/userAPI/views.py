@@ -9,6 +9,7 @@ from . serializer import *
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
 class EmailTokenObtainPairView(TokenObtainPairView):
@@ -36,19 +37,16 @@ class LoginView(APIView):
 #localhost:8000/api/v1.0/user/login
 
 class AuthView(APIView): 
-    def post(self, request): 
-        token_key = request.data.get("token") 
-        try: 
-            token = Token.objects.get(key=token_key) 
-            user = token.user
-            output = [{"email" : user.email, 
-                   "first_name": user.first_name, 
-                   "last_name": user.last_name, 
-                   "Membership Type": user.membershipType, 
-                   "Membership Name": user.get_membershipName_display()} ] 
-            return Response({output}, status=200) 
-        except Token.DoesNotExist: 
-            return Response({"error": "Invalid token"}, status=400)
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        return Response({
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "membership_name": user.get_membershipName_display(),
+        })
 
 class UserView(APIView):
     def post(self, request):
