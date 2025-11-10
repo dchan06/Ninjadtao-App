@@ -1,6 +1,8 @@
+import { LogoutButton } from "@/lib/functions";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface UserProfile {
   email: string;
@@ -132,17 +134,104 @@ export default function Profile() {
 
   console.log("User Data:", userData);
 
+  
+  // --- Main UI ---
   return (
-    <View style={styles.container}>
-      <Text>Email: {userData.email}</Text>
-      {userData.first_name && <Text>Name: {userData.first_name + " " + userData.last_name}</Text>} 
-      {userData.membership_name && <Text>Membership: {userData.membership_name}</Text>}
-      <Text>Date Joined: </Text>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.profileCard}>
+          <Text style={styles.title}>Profile</Text>
+
+          <View style={styles.infoItem}>
+            <Text style={styles.label}>Email</Text>
+            <Text style={styles.value}>{userData.email}</Text>
+          </View>
+
+          {userData.first_name && (
+            <View style={styles.infoItem}>
+              <Text style={styles.label}>Name</Text>
+              <Text style={styles.value}>
+                {userData.first_name + " " + userData.last_name}
+              </Text>
+            </View>
+          )}
+
+          {userData.membership_name && (
+            <View style={styles.infoItem}>
+              <Text style={styles.label}>Membership</Text>
+              <Text style={styles.value}>{userData.membership_name}</Text>
+            </View>
+          )}
+
+          <View style={styles.infoItem}>
+            <Text style={styles.label}>Date Joined</Text>
+            <Text style={styles.value}>—</Text>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <LogoutButton />
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  container: {
+    flex: 1,
+    justifyContent: "space-between",
+    padding: 20,
+  },
+  profileCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 16,
+    color: "#333",
+  },
+  infoItem: {
+    marginBottom: 14,
+  },
+  label: {
+    fontSize: 14,
+    color: "#777",
+  },
+  value: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#111",
+  },
+  footer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#555",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 16,
+  },
 });
+
+

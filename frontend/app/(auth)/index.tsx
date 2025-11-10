@@ -53,7 +53,7 @@ export default function LoginScreen() {
       { /*TOP AREA FOR LOGO & NAME*/ }
       <View style={{flex: 2, alignItems: "center", justifyContent: "flex-end"}}> 
       <Image
-          source={require("@/assets/images/Njd-Logo.png")}
+          source={require("@/assets/images/Njd-Logo-Rounded.png")}
           style={{ width: 150, height: 150 }}
         />
         <Text style = {{ fontSize: 24, fontWeight: "bold", color: "#333" , paddingVertical: 10}}>

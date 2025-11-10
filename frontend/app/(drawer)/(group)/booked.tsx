@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
-export default function UpcomingEvents() {
+export default function Booked() {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -63,44 +63,45 @@ export default function UpcomingEvents() {
       ))}
     </View>
 
-    <View style={styles.grid}>
-      {monthMatrix.map((row, rIdx) => (
-        <View key={rIdx} style={styles.weekRow}>
-          {row.map((day, cIdx) => {
-            if (!day) {
-              return <View key={cIdx} style={styles.dayCell} />;
-            }
-            const isSelected =
-              day.getFullYear() === selectedDate.getFullYear() &&
-              day.getMonth() === selectedDate.getMonth() &&
-              day.getDate() === selectedDate.getDate();
-            const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+<View style={styles.grid}>
+  {monthMatrix.map((row, rIdx) => (
+    <View key={rIdx} style={styles.weekRow}>
+      {row.map((day, cIdx) => {
+        if (!day) {
+          return <View key={cIdx} style={styles.dayCell} />;
+        }
 
-            return (
-              <TouchableOpacity
-                key={cIdx}
+        const isSelected =
+          day.getFullYear() === selectedDate.getFullYear() &&
+          day.getMonth() === selectedDate.getMonth() &&
+          day.getDate() === selectedDate.getDate();
+        const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+
+        return (
+          <TouchableOpacity
+            key={cIdx}
+            style={styles.dayCell}
+            onPress={() => selectDate(day)}
+          >
+            <View style={styles.dayInner}>
+              {isSelected && <View style={styles.selectedDay} />}
+              <Text
                 style={[
-                  styles.dayCell,
-                  !isCurrentMonth && styles.outsideMonthDay,
-                  isSelected && styles.selectedDay,
+                  styles.dayText,
+                  isSelected && styles.selectedDayText,
+                  !isCurrentMonth && styles.outsideMonthDayText,
                 ]}
-                onPress={() => selectDate(day)}
               >
-                <Text
-                  style={[
-                    styles.dayText,
-                    isSelected && styles.selectedDayText,
-                    !isCurrentMonth && styles.outsideMonthDayText,
-                  ]}
-                >
-                  {day.getDate()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      ))}
+                {day.getDate()}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
+  ))}
+</View>
+
 
     <View style={styles.eventsContainer}>
       <Text style={styles.eventsHeader}>
@@ -181,27 +182,46 @@ const styles = StyleSheet.create({
   grid: { borderRadius: 8 },
   weekRow: { flexDirection: "row" },
   dayCell: {
-    width: "14.28%",
-    paddingVertical: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dayText: { fontSize: 14 },
-  outsideMonthDay: { opacity: 0.4 },
-  outsideMonthDayText: { color: "#888" },
-  selectedDay: {
-    backgroundColor: "#007AFF",
-    borderRadius: 24,
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  selectedDayText: { color: "white", fontWeight: "700" },
+  width: "14.28%",
+  alignItems: "center",
+  justifyContent: "center",
+  paddingVertical: 6,
+},
 
-  eventsContainer: { marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderColor: "#eee" },
-  eventsHeader: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  noEventsText: { color: "#777" },
-  eventItem: { paddingVertical: 4, fontSize: 14 },
+dayInner: {
+  width: 36,
+  height: 36,
+  alignItems: "center",
+  justifyContent: "center",
+  position: "relative",
+},
+
+dayText: {
+  fontSize: 14,
+  textAlign: "center",
+  zIndex: 1, 
+},
+
+selectedDay: {
+  position: "absolute",
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: "#007AFF",
+  top: 0,
+  left: 0,
+},
+
+selectedDayText: {
+  color: "white",
+  fontWeight: "700",
+},
+
+outsideMonthDayText: {
+  color: "#888",
+},
+eventsContainer: { marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderColor: "#eee" }, 
+eventsHeader: { fontSize: 16, fontWeight: "700", marginBottom: 6 }, noEventsText: { color: "#777" }, eventItem: { paddingVertical: 4, fontSize: 14 },
+
 });
   

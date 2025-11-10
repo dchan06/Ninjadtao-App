@@ -39,7 +39,7 @@ class userModel(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=50)
     membershipName = models.IntegerField(
         choices = Membership.choices,
-        default=Membership.Monthly 
+        default= Membership.Monthly
     )
     if membershipName == Membership.Monthly:
         expiration = "1 Month"
