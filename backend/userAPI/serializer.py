@@ -41,3 +41,8 @@ class ClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Classes
         fields = '__all__'
+
+class MembershipsBoughtSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MembershipsBought
+        fields = ['membership', 'purchase_date', 'start_date', 'expiration_date']

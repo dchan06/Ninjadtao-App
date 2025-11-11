@@ -22,10 +22,9 @@ export default function App() {
 interface ClassItem {
   classId: number;
   class_name: string;
-  class_description: string;
   class_date: string;
-  class_start_time: string;
-  class_end_time: string;
+  start_time: string;
+  end_time: string;
   instructor_name: string;
 }
 
@@ -74,7 +73,7 @@ export function ClassPicker({ selectedDate }: ClassPickerProps) {
         <View style={{ flex: 1 }}>
           <Text style={styles.classTitle}>{item.class_name}</Text>
           <Text style={styles.classTime}>
-            {item.class_start_time} - {item.class_end_time} 
+            {item.start_time} - {item.end_time} 
           </Text>
           <Text style={styles.classTime}>
              Instructor: {item.instructor_name}

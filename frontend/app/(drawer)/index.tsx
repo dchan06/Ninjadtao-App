@@ -10,13 +10,33 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-interface ClassInfo {
-  classId: number;
-  class_name: string;
-  class_date: string;
-  start_time: string;
-  end_time: string;
-  instructor_name: string;
+class ClassInfo {
+  constructor(
+    public classId: number,
+    public class_name: string,
+    public class_date: string,
+    public start_time: string,
+    public end_time: string,
+    public instructor_name: string
+  ) {}
+
+  get startDate(): Date {
+    return new Date(`${this.class_date}T${this.start_time}`);
+  }
+
+  get formattedTime(): string {
+    return this.startDate.toLocaleString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+}
+
+interface MembershipInfo {
+  membership: string;
+  purchase_date: string;
+  start_date: string;
+  expiration_date: string;
 }
 
 interface BookedClass {
@@ -29,7 +49,7 @@ interface UserProfile {
   email: string;
   first_name?: string;
   last_name?: string;
-  membership_name?: string;
+  active_membership?: MembershipInfo;
   booked_classes?: BookedClass[];
 }
 
@@ -78,8 +98,35 @@ export default function Profile() {
       if (!response.ok) throw new Error("Failed to fetch user data");
 
       const data = await response.json();
-      setUserData(data);
-      console.log(data);
+      
+      // --- Format booked class times before saving ---
+      if (data.booked_classes) {
+        data.booked_classes = data.booked_classes.map((b: any) => {
+          const startDate = new Date(`${b.classId.class_date}T${b.classId.start_time}`);
+          const endDate = new Date(`${b.classId.class_date}T${b.classId.end_time}`);
+
+          const formattedTime = `${startDate.toLocaleString([], {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })} - ${endDate.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`;
+
+          return {
+            ...b,
+            classId: {
+              ...b.classId,
+              formattedTime, 
+            },
+          };
+        });
+      }
+      // ------------------ END ------------------
+      console.log("Fetched user data:", data);
+      setUserData(data)    //Setting the userData to data //{"booked_classes": [{"booking_date": "2025-11-11 11:52", "classId": [Object], "id": 1}], "email": "david@yahoo.com", "first_name": "David", "last_name": "Chan", "membership_name": "1 Month"}
     } catch (err) {
       console.error("Error fetching user data:", err);
       setError("Could not fetch user data");
@@ -164,12 +211,20 @@ export default function Profile() {
               <Text style={styles.value}>—</Text>
             </View>
           </View>
-
+          
           {/* Memberships Card */}
           <View style={styles.profileCard}>
             <Text style={styles.title}>Membership</Text>
-            {userData.membership_name ? (
-              <Text style={styles.value}>{userData.membership_name}</Text>
+            {userData.active_membership ? (
+              <View>
+                <Text style={styles.value}>{userData.active_membership.membership}</Text>
+                <Text style={styles.label}>
+                  Start: {new Date(userData.active_membership.start_date).toLocaleDateString()}
+                </Text>
+                <Text style={styles.label}>
+                  Expires: {new Date(userData.active_membership.expiration_date).toLocaleDateString()}
+                </Text>
+              </View>
             ) : (
               <Text style={styles.label}>No active membership</Text>
             )}
@@ -183,8 +238,7 @@ export default function Profile() {
                 <View key={index} style={styles.infoItem}>
                   <Text style={styles.value}>{b.classId.class_name}</Text>
                   <Text style={styles.label}>
-                    {new Date(b.classId.class_date).toLocaleString()} —{" "}
-                    {b.classId.instructor_name}
+                    {b.classId.formattedTime}
                   </Text>
                 </View>
               ))

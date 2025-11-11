@@ -138,7 +138,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'DATETIME_FORMAT': "%Y-%m-%d %H:%M:%S",  # no microseconds, human readable
+    'DATETIME_FORMAT': "%Y-%m-%d %H:%M",  # no microseconds, human readable
 }
 
 SIMPLE_JWT = {
@@ -147,7 +147,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    "USER_ID_FIELD": "email",       # default is "id"
+    "USER_ID_FIELD": "email",       # default is "id", USER_ID_FIELD is changed to "email"
 }
 
 AUTHENTICATION_BACKENDS = [

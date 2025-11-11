@@ -11,6 +11,9 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
+from datetime import datetime
+
+from datetime import date
 
 # Create your views here.
 class EmailTokenObtainPairView(TokenObtainPairView):
@@ -36,28 +39,38 @@ class LoginView(APIView):
             return Response({f"error": "Invalid credentials. email: {email}"}, status=400)
 #localhost:8000/api/v1.0/user/login
 
-class AuthView(APIView): 
+class AuthView(APIView):
     permission_classes = [IsAuthenticated]
+
     def post(self, request):
         user = request.user
+        today = date.today()
 
-        # Get all booked classes for this user
-        booked_classes = BookedClasses.objects.filter(userId=user)
-
-        # Serialize them
+        # Get booked classes
+        booked_classes = BookedClasses.objects.filter(userId=user, booking_date__gte=today)
         booking_serializer = BookingSerializer(booked_classes, many=True)
 
-        #classes
-        #class_serializer = ClassSerializer(booked_classes, many=True)
+        # Get active membership (latest one that’s still valid)
+        active_membership = MembershipsBought.objects.filter(
+            userId=user,
+            start_date__lte=today,
+            expiration_date__gte=today
+        ).order_by('-start_date').first()
 
-        # Return user info + booked classes
+        membership_serializer = (
+            MembershipsBoughtSerializer(active_membership)
+            if active_membership
+            else None
+        )
+
         return Response({
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "membership_name": user.get_membershipName_display(),
-            "booked_classes": booking_serializer.data, 
-            #"classes": class_serializer.data, 
+            "booked_classes": booking_serializer.data,
+            "active_membership": (
+                membership_serializer.data if membership_serializer else None
+            ),
         })
 
 class BookingView(APIView): 
@@ -70,14 +83,20 @@ class BookingView(APIView):
 class ClassesView(APIView):
     def get(self, request):
         date_param = request.query_params.get('date')
+        print("Incoming date:", date_param)
 
-        if date_param:
-            try:
-                classes = Classes.objects.filter(class_date=date_param)
-            except ValueError:
-                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            classes = Classes.objects.all()
+        try:
+            if date_param:
+                date_obj = datetime.strptime(date_param, "%Y-%m-%d").date()
+                classes = Classes.objects.filter(class_date=date_obj)
+            else:
+                classes = Classes.objects.all()
 
-        serializer = ClassSerializer(classes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            serializer = ClassSerializer(classes, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
