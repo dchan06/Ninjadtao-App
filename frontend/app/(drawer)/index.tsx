@@ -13,15 +13,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 interface ClassInfo {
   classId: number;
   class_name: string;
-  class_description: string;
   class_date: string;
+  start_time: string;
+  end_time: string;
   instructor_name: string;
 }
 
 interface BookedClass {
   id: number;
   booking_date: string;
-  clasId: ClassInfo; // nested class object from Django
+  classId: ClassInfo; // nested class object from Django
 }
 
 interface UserProfile {
@@ -78,6 +79,7 @@ export default function Profile() {
 
       const data = await response.json();
       setUserData(data);
+      console.log(data);
     } catch (err) {
       console.error("Error fetching user data:", err);
       setError("Could not fetch user data");
@@ -179,10 +181,10 @@ export default function Profile() {
             {userData.booked_classes && userData.booked_classes.length > 0 ? (
               userData.booked_classes.map((b, index) => (
                 <View key={index} style={styles.infoItem}>
-                  <Text style={styles.value}>{b.clasId.class_name}</Text>
+                  <Text style={styles.value}>{b.classId.class_name}</Text>
                   <Text style={styles.label}>
-                    {new Date(b.clasId.class_date).toLocaleString()} —{" "}
-                    {b.clasId.instructor_name}
+                    {new Date(b.classId.class_date).toLocaleString()} —{" "}
+                    {b.classId.instructor_name}
                   </Text>
                 </View>
               ))

@@ -45,7 +45,10 @@ class AuthView(APIView):
         booked_classes = BookedClasses.objects.filter(userId=user)
 
         # Serialize them
-        serializer = BookingSerializer(booked_classes, many=True)
+        booking_serializer = BookingSerializer(booked_classes, many=True)
+
+        #classes
+        #class_serializer = ClassSerializer(booked_classes, many=True)
 
         # Return user info + booked classes
         return Response({
@@ -53,7 +56,8 @@ class AuthView(APIView):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "membership_name": user.get_membershipName_display(),
-            "booked_classes": serializer.data, 
+            "booked_classes": booking_serializer.data, 
+            #"classes": class_serializer.data, 
         })
 
 class BookingView(APIView): 

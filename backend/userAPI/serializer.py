@@ -25,10 +25,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = userModel
         fields = '__all__'
 
+class ClassesNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Classes
+        fields = ['classId', 'class_name', 'class_date', 'start_time', 'end_time', 'instructor_name']
+
 class BookingSerializer(serializers.ModelSerializer):
+    classId = ClassesNestedSerializer(read_only=True)  # nested instead of just PK
+
     class Meta:
         model = BookedClasses
-        fields = '__all__'
+        fields = ['id', 'booking_date', 'classId']
 
 class ClassSerializer(serializers.ModelSerializer):
     class Meta:
