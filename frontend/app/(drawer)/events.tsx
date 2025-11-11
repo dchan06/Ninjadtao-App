@@ -1,23 +1,23 @@
 import { Asset } from "expo-asset";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Easing,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
