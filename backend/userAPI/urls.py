@@ -1,9 +1,6 @@
 from django.urls import path
 
-from .views import TestView
-from .views import EmailTokenObtainPairView
-from .views import AuthView
-from .views import ClassesView
+from .views import *
 
 
 urlpatterns = [
@@ -11,6 +8,8 @@ urlpatterns = [
     path('login/', EmailTokenObtainPairView.as_view(), name='email_login'),
     path('auth/', AuthView.as_view()),
     path('classes/', ClassesView.as_view()),
+    path('cancel-booking/<int:class_id>/', CancelBookingView.as_view(), name='cancel-booking'),
+    path("book-class/", BookingView.as_view(), name="book-class"),
 ]
 
 

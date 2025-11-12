@@ -18,6 +18,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),
+            "userId": user.id,
         }
 
 class RegisterSerializer(serializers.ModelSerializer):

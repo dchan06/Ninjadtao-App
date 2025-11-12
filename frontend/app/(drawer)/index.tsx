@@ -1,6 +1,7 @@
 import { LogoutButton } from "@/lib/functions";
+import { useFocusEffect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -53,35 +54,27 @@ interface UserProfile {
   booked_classes?: BookedClass[];
 }
 
-const BASE_URL = "http://localhost:8000/api/v1.0";
+const API_URL = "http://localhost:8000/api";
+const BASE_URL = `${API_URL}/v1.0/user`;
 
 export default function Profile() {
   const [userData, setUserData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
+  useFocusEffect(
+    useCallback(() => {
+      const loadProfile = async () => {
         const access = await SecureStore.getItemAsync("access");
-        if (!access) {
-          setError("No access token found");
-          setLoading(false);
-          return;
-        }
-        await fetchUserData(access);
-      } catch (err) {
-        console.error("Error loading token:", err);
-        setError("Error loading token");
-        setLoading(false);
-      }
-    };
-    loadProfile();
-  }, []);
+        if (access) await fetchUserData(access);
+      };
+      loadProfile();
+    }, [])
+  );
 
   const fetchUserData = async (jwt: string) => {
     try {
-      const response = await fetch(`${BASE_URL}/user/auth/`, {
+      const response = await fetch(`${BASE_URL}/auth/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,7 +133,7 @@ export default function Profile() {
       const refresh = await SecureStore.getItemAsync("refresh");
       if (!refresh) return null;
 
-      const response = await fetch(`${BASE_URL}/api/token/refresh/`, {
+      const response = await fetch(`${API_URL}/token/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh }),

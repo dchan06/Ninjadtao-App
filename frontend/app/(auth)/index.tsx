@@ -30,7 +30,7 @@ export default function LoginScreen() {
       // Save JWT tokens securely
       await SecureStore.setItemAsync("access", data.access);
       await SecureStore.setItemAsync("refresh", data.refresh);
-      await SecureStore.setItemAsync("email", JSON.stringify({ email }));
+      await SecureStore.setItemAsync("userId", data.userId.toString()); 
 
       // Navigate to booking
       router.replace("../(drawer)");

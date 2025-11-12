@@ -103,6 +103,7 @@ class Classes(models.Model):
     class_date = models.DateField()
     start_time = models.TimeField(default="12:00:00")
     end_time = models.TimeField(null=True, blank=True)  # allow null
+    is_passed = models.BooleanField(default=False)
     instructor_name = models.CharField(max_length=100)
 
     def save(self, *args, **kwargs):

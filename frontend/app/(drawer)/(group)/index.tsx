@@ -1,8 +1,10 @@
+import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-const BASE_URL = "http://localhost:8000/api/v1.0/user";
+const API_BASE = "http://localhost:8000/api";
+const BASE_URL = `${API_BASE}/v1.0/user`;
 
 export default function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -26,6 +28,7 @@ interface ClassItem {
   start_time: string;
   end_time: string;
   instructor_name: string;
+  booked: boolean;
 }
 
 interface ClassPickerProps {
@@ -36,18 +39,56 @@ export function ClassPicker({ selectedDate }: ClassPickerProps) {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [bookedClasses, setBookedClasses] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const fetchClasses = async () => {
-    setLoading(true);
+  setLoading(true);
+  try {
+    const dateString = selectedDate.toISOString().split("T")[0];
+    const userId = await SecureStore.getItemAsync("userId");
+    const response = await fetch(`${BASE_URL}/classes/?date=${dateString}&userId=${userId}`);
+
+    const data = await response.json();
+    const fetchedClasses = data.classes || [];
+
+    // Initialize bookedClasses state based on backend data
+    const backendBookedIds = fetchedClasses
+      .filter((cls: ClassItem) => cls.booked)
+      .map((cls: ClassItem) => cls.classId);
+
+    setClasses(fetchedClasses);
+    setBookedClasses(backendBookedIds);
+    setUserId(userId);
+
+    console.log("Fetched classes:", fetchedClasses);
+  } catch (err) {
+    console.error("Error fetching classes:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const refreshAccessToken = async (): Promise<string | null> => {
     try {
-      const dateString = selectedDate.toISOString().split("T")[0]; // YYYY-MM-DD
-      const response = await fetch(`http://localhost:8000/api/v1.0/user/classes/?date=${dateString}`);
+      const refresh = await SecureStore.getItemAsync("refresh");
+      if (!refresh) return null;
+
+      const response = await fetch(`${API_BASE}/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
+
+      if (!response.ok) return null;
+
       const data = await response.json();
-      setClasses(data); // assumes backend returns list of serialized Classes
-    } catch (err) {
-      console.error("Error fetching classes:", err);
-    } finally {
-      setLoading(false);
+      const newAccess = data.access;
+      await SecureStore.setItemAsync("access", newAccess);
+      console.log("🔄 Access token refreshed");
+      return newAccess;
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      return null;
     }
   };
 
@@ -55,18 +96,83 @@ export function ClassPicker({ selectedDate }: ClassPickerProps) {
     fetchClasses();
   }, [selectedDate]);
 
-  const handleBook = (id: number) => {
-    setBookedClasses((prev) => [...prev, id]);
-    console.log(`Booked class ID: ${id} on ${selectedDate.toDateString()}`);
+  const handleBook = async (classId: number, retry = false) => {
+    try {
+      const access = await SecureStore.getItemAsync("access");
+      const userId = await SecureStore.getItemAsync("userId");
+
+      const response = await fetch(`${BASE_URL}/book-class/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access}`,
+        },
+        body: JSON.stringify({ userId: parseInt(userId || "0"), classId }),
+      });
+
+      // ✅ Handle expired token
+      if (response.status === 401 && !retry) {
+        const newToken = await refreshAccessToken();
+        if (newToken) return handleBook(classId, true);
+        throw new Error("Session expired. Please log in again.");
+      }
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setBookedClasses((prev) => [...prev, classId]);
+        console.log("✅ Booked successfully:", data);
+      } else {
+        console.warn("❌ Booking failed:", data.error);
+      }
+    } catch (err) {
+      console.error("Booking error:", err);
+    }
   };
 
-  const handleCancel = (id: number) => {
-    setBookedClasses((prev) => prev.filter((classId) => classId !== id));
-    console.log(`Cancelled class ID: ${id}`);
-  };
+
+
+  const handleCancel = async (classId: number, retry = false) => {
+  try {
+    const access = await SecureStore.getItemAsync("access");
+
+    const response = await fetch(`${BASE_URL}/cancel-booking/${classId}/`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access}`,
+      },
+    });
+
+    // ✅ Retry on expired token
+    if (response.status === 401 && !retry) {
+      const newToken = await refreshAccessToken();
+      if (newToken) return handleCancel(classId, true);
+      throw new Error("Session expired. Please log in again.");
+    }
+
+    if (response.ok) {
+      setBookedClasses((prev) => prev.filter((id) => id !== classId));
+      setClasses((prev) =>
+      prev.map((cls) =>
+      cls.classId === classId ? { ...cls, booked: false } : cls
+    )
+  );
+      console.log("🟢 Cancelled successfully");
+    } else {
+      const data = await response.json();
+      console.warn("❌ Cancel failed:", data.error);
+    }
+  } catch (err) {
+    console.error("Cancel error:", err);
+  }
+};
+
+
+  // ---------------------- CLASS ITEMS RENDER ---------------------- //
 
   const renderItem = ({ item }: { item: ClassItem }) => {
-    const isBooked = bookedClasses.includes(item.classId);
+    const isBooked = item.booked || bookedClasses.includes(item.classId);
 
     return (
       <View style={styles.classCard}>
@@ -224,13 +330,15 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   bookButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#C9A64D",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
+    minWidth: 90, // ✅ keeps width consistent
+    alignItems: "center", // ✅ centers text
   },
   bookedButton: {
-    backgroundColor: "green",
+    backgroundColor: "#A6A82A",
   },
   bookButtonText: {
     color: "#fff",

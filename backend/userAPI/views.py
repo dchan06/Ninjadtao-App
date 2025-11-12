@@ -34,7 +34,7 @@ class LoginView(APIView):
         user = authenticate(username=email, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key, "username": user.username, "userID": user.id}, status = 200)
+            return Response({"token": token.key, "username": user.username, "userId": user.id}, status = 200)
         else:
             return Response({f"error": "Invalid credentials. email: {email}"}, status=400)
 #localhost:8000/api/v1.0/user/login
@@ -73,30 +73,72 @@ class AuthView(APIView):
             ),
         })
 
-class BookingView(APIView): 
-    def post(self, request): 
-        serializer = BookingSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-
 class ClassesView(APIView):
     def get(self, request):
         date_param = request.query_params.get('date')
-        print("Incoming date:", date_param)
+        user_id = request.query_params.get('userId')
+
+        if not user_id:
+            return Response({"error": "user_id required"}, status=400)
 
         try:
+            user = MembershipsBought.objects.filter(userId=user_id, expiration_date__gte = date_param).first()
+            if not user:
+                return Response({"error": "User not found, or membership expires before this date"}, status=status.HTTP_404_NOT_FOUND)
+
             if date_param:
                 date_obj = datetime.strptime(date_param, "%Y-%m-%d").date()
-                classes = Classes.objects.filter(class_date=date_obj)
+                classes_qs = Classes.objects.filter(class_date=date_obj)
             else:
-                classes = Classes.objects.all()
+                classes_qs = Classes.objects.all()
 
-            serializer = ClassSerializer(classes, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            classes_list = []
+            for cls in classes_qs:
+                is_booked = BookedClasses.objects.filter(classId=cls, userId=user_id).exists()
+                cls_data = ClassSerializer(cls).data
+                cls_data['booked'] = is_booked  # add booked status
+                classes_list.append(cls_data)
+
+            return Response({"classes": classes_list}, status=status.HTTP_200_OK)
 
         except Exception as e:
             import traceback
             traceback.print_exc()
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class CancelBookingView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def delete(self, request, class_id):
+        user = request.user
+        try:
+            booking = BookedClasses.objects.get(classId=class_id, userId=user)
+            booking.delete()
+            return Response({"message": "Booking cancelled successfully"}, status=200)
+        except BookedClasses.DoesNotExist:
+            return Response({"error": "Booking not found"}, status=404)
+        
+class BookingView(APIView):
+    def post(self, request):
+        user_id = request.data.get('userId')
+        class_id = request.data.get('classId')
+
+        if not user_id or not class_id:
+            return Response({"error": "userId and classId are required"}, status=400)
+
+        try:
+            # Prevent duplicate booking
+            if BookedClasses.objects.filter(userId=user_id, classId=class_id).exists():
+                return Response({"error": "Already booked"}, status=400)
+
+            booking = BookedClasses.objects.create(
+                userId_id=user_id,  # _id allows direct foreign key assignment
+                classId_id=class_id,
+                booking_date=datetime.now().date()
+            )
+            return Response({"message": "Class booked successfully"}, status=201)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": str(e)}, status=500)
