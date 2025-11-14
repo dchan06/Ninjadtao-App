@@ -10,9 +10,11 @@ urlpatterns = [
     path('classes/', ClassesView.as_view()),
     path('cancel-booking/<int:class_id>/', CancelBookingView.as_view(), name='cancel-booking'),
     path("book-class/", BookingView.as_view(), name="book-class"),
+    path("events/", EventsView.as_view(), name="event-list"),
 ]
 
 
 #localhost:8000/api/v1.0/user/test/
 #localhost:8000/api/v1.0/user/login/
 #localhost:8000/api/v1.0/user/profile/
+#localhost:8000/api/v1.0/user/events

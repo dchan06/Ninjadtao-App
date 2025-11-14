@@ -47,3 +47,11 @@ class MembershipsBoughtSerializer(serializers.ModelSerializer):
     class Meta:
         model = MembershipsBought
         fields = ['membership', 'purchase_date', 'start_date', 'expiration_date']
+
+# ----------------------------
+# Events
+# ----------------------------
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = ['event_id', 'name', 'description', 'date', 'start_time', 'end_time', 'location', 'host', 'capacity']

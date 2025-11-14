@@ -129,3 +129,26 @@ class BookedClasses(models.Model):
     def __str__(self):
         return f"{self.userId.id}: {self.userId.first_name} {self.userId.last_name} - {self.classId.classId}: {self.classId.class_name} {self.classId.class_date} {self.classId.start_time}"
 
+class Event(models.Model):
+    event_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField(blank=True, null=True)
+    location = models.CharField(max_length=200, blank=True)
+    host = models.CharField(max_length=100, blank=True)
+    capacity = models.PositiveIntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        from datetime import datetime, timedelta
+        if not self.end_time and self.start_time:
+            dt = datetime.combine(self.date, self.start_time) + timedelta(hours=1)
+            self.end_time = dt.time()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} on {self.date}"
+
+    class Meta:
+        ordering = ['event_id']

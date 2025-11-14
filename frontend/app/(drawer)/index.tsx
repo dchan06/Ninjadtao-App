@@ -46,6 +46,17 @@ interface BookedClass {
   classId: ClassInfo; // nested class object from Django
 }
 
+interface EventInfo {
+  name: string;
+  description: string;
+  date: string;
+  start_time: string;
+  end_time: string | null;
+  location?: string;
+  host?: string;
+  capacity?: number;
+  formattedTime?: string;
+}
 interface UserProfile {
   email: string;
   first_name?: string;
