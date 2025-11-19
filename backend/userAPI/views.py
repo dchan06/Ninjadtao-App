@@ -15,6 +15,13 @@ from datetime import datetime
 
 from datetime import date
 
+from rest_framework.permissions import BasePermission
+
+#Staff permissions
+class IsStaffUser(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_staff
+
 # Create your views here.
 class EmailTokenObtainPairView(TokenObtainPairView):
     serializer_class = EmailTokenObtainPairSerializer
@@ -55,22 +62,17 @@ class AuthView(APIView):
             userId=user,
             start_date__lte=today,
             expiration_date__gte=today
-        ).order_by('-start_date').first()
+        ).order_by('-start_date')
 
-        membership_serializer = (
-            MembershipsBoughtSerializer(active_membership)
-            if active_membership
-            else None
-        )
+        membership_serializer = MembershipsBoughtSerializer(active_membership, many = True)
 
         return Response({
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "booked_classes": booking_serializer.data,
-            "active_membership": (
-                membership_serializer.data if membership_serializer else None
-            ),
+            "active_membership": membership_serializer.data,
+            "is_staff": user.is_staff, 
         })
 
 class ClassesView(APIView):
@@ -82,7 +84,7 @@ class ClassesView(APIView):
             return Response({"error": "user_id required"}, status=400)
 
         try:
-            user = MembershipsBought.objects.filter(userId=user_id, expiration_date__gte = date_param).first()
+            user = MembershipsBought.objects.filter(userId=user_id, expiration_date__gte = date_param)
             if not user:
                 return Response({"error": "User not found, or membership expires before this date"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -111,34 +113,83 @@ class CancelBookingView(APIView):
 
     def delete(self, request, class_id):
         user = request.user
+
         try:
-            booking = BookedClasses.objects.get(classId=class_id, userId=user)
+            # 1. Fetch the booking
+            booking = BookedClasses.objects.get(
+                classId_id=class_id,
+                userId=user
+            )
+
+            # 2. Retrieve the EXACT membership used for booking
+            membership = booking.membershipId
+
+            # 3. Check if the membership can have credits refunded
+            today = date.today()
+            membership_valid = (
+                membership.expiration_date is not None and
+                membership.expiration_date >= today
+            )
+
+            if membership_valid and membership.has_credits():
+                membership.return_credits()
+
+            # 4. Delete booking
             booking.delete()
+
             return Response({"message": "Booking cancelled successfully"}, status=200)
+
         except BookedClasses.DoesNotExist:
             return Response({"error": "Booking not found"}, status=404)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": str(e)}, status=500)
+
         
 class BookingView(APIView):
-    def post(self, request):
-        user_id = request.data.get('userId')
-        class_id = request.data.get('classId')
+    permission_classes = [IsAuthenticated]
 
-        if not user_id or not class_id:
-            return Response({"error": "userId and classId are required"}, status=400)
+    def post(self, request):
+        userId = request.data.get('userId')
+        classId = request.data.get('classId')
+        membershipId = request.data.get('membershipId')
+
+        if not userId or not classId or not membershipId:
+            return Response({"error": "userId, classId, and membershipId are required"}, status=400)
+
+        membership = MembershipsBought.objects.filter(id=membershipId).first()
+        if membership is None:
+            return Response({"error": "No active membership"}, status=401)
 
         try:
-            # Prevent duplicate booking
-            if BookedClasses.objects.filter(userId=user_id, classId=class_id).exists():
+            if BookedClasses.objects.filter(userId=userId, classId=classId).exists():
                 return Response({"error": "Already booked"}, status=400)
 
             booking = BookedClasses.objects.create(
-                userId_id=user_id,  # _id allows direct foreign key assignment
-                classId_id=class_id,
+                userId_id=userId,
+                classId_id=classId,
+                membershipId_id=membershipId,
                 booking_date=datetime.now().date()
             )
+
+            if membership.has_credits():
+                membership.use_credits()
+
             return Response({"message": "Class booked successfully"}, status=201)
 
         except Exception as e:
             import traceback
             traceback.print_exc()
             return Response({"error": str(e)}, status=500)
+
+
+class AdminUserView(APIView): 
+    permission_classes = [IsAuthenticated, IsStaffUser]
+
+    def post(self):
+        all_users = userModel.allUsers()
+        user_serializer = RegisterSerializer(all_users) 
+        return Response ({"users" : user_serializer})
+        

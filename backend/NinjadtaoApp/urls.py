@@ -29,8 +29,6 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), #--- FOR JWT AUTH ---
 ]
 
-
-
 #localhost:8000
 #localhost:8000/admin/
 #localhost:8000/api/v1.0/user

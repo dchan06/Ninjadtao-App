@@ -3,6 +3,8 @@ import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import { useEffect } from "react";
 
+const BASE_URL = "http://localhost:8000";
+
 export default function RootLayout() {
   const router = useRouter();
 
@@ -29,7 +31,7 @@ export default function RootLayout() {
             return;
           }
 
-          const response = await fetch("http://localhost:8000/api/token/refresh/", {
+          const response = await fetch(`${BASE_URL}/api/token/refresh/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh }),

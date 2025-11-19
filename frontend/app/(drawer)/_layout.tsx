@@ -1,13 +1,15 @@
 import { BebasNeue_400Regular, useFonts } from '@expo-google-fonts/bebas-neue';
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { DrawerItemList } from "@react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
 import { Image, Text, View } from "react-native";
 
+// ----------------------------------------------------
+// CUSTOM DRAWER
+// ----------------------------------------------------
 function CustomDrawerContent(props: any) {
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* --- PROFILE SECTION --- */}
       <View
         style={{
           alignItems: "center",
@@ -24,12 +26,10 @@ function CustomDrawerContent(props: any) {
         <Text style={{ color: "#666" }}>john.doe@example.com</Text>
       </View>
 
-      {/* --- NAVIGATION ITEMS --- */}
       <View style={{ flex: 1, paddingTop: 10 }}>
         <DrawerItemList {...props} />
       </View>
 
-      {/* --- FOOTER (OPTIONAL) --- */}
       <View
         style={{
           paddingVertical: 20,
@@ -38,12 +38,17 @@ function CustomDrawerContent(props: any) {
           borderColor: "#ddddddff",
         }}
       >
-        <Text style={{ color: "#999", fontSize: 14 }}>Ninjadtao Muay Thai Gym</Text>
+        <Text style={{ color: "#999", fontSize: 14 }}>
+          Ninjadtao Muay Thai Gym
+        </Text>
       </View>
     </View>
   );
 }
 
+// ----------------------------------------------------
+// MAIN DRAWER LAYOUT
+// ----------------------------------------------------
 export default function DrawerLayout() {
   // Load Bebas Neue font
   const [fontsLoaded] = useFonts({
@@ -59,7 +64,7 @@ export default function DrawerLayout() {
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: true,
-        drawerActiveTintColor: "#007bff",
+        drawerActiveTintColor: "#eecb7eff",
         drawerInactiveTintColor: "#666",
         drawerActiveBackgroundColor: "#e6f0ff",
       }}
@@ -73,13 +78,13 @@ export default function DrawerLayout() {
           headerTitleStyle: {
             fontFamily: "BebasNeue_400Regular",
             fontSize: 26,
-            color: "#333",
           },
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <MaterialIcons name="person-outline" size={size} color={color} />
           ),
         }}
       />
+
       <Drawer.Screen
         name="(group)"
         options={{
@@ -89,29 +94,29 @@ export default function DrawerLayout() {
           headerTitleStyle: {
             fontFamily: "BebasNeue_400Regular",
             fontSize: 26,
-            color: "#333",
           },
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <MaterialIcons name="group" size={size} color={color} />
           ),
         }}
       />
+
       <Drawer.Screen
         name="events"
         options={{
-          title: " Events",
+          title: "Events",
           headerStyle: { backgroundColor: "#eecb7eff" },
           headerTintColor: "#333",
           headerTitleStyle: {
             fontFamily: "BebasNeue_400Regular",
             fontSize: 26,
-            color: "#333",
           },
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <MaterialIcons name="event" size={size} color={color} />
           ),
         }}
       />
     </Drawer>
   );
 }
+

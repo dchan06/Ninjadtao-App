@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group, Permission
 from django.contrib.auth.base_user import BaseUserManager
 from dateutil.relativedelta import relativedelta
+from datetime import date
 
 # ----------------------------
 # Custom User Manager
@@ -32,22 +33,51 @@ class Memberships (models.TextChoices):
     TEN_CREDITS = "10 Credits", "10 Credits"
     TWENTY_CREDITS = "20 Credits", "20 Credits"
 
-
 class MembershipsBought(models.Model):
     id = models.AutoField(primary_key=True)
     userId = models.ForeignKey('userModel', on_delete=models.CASCADE, related_name='membership_bought', default=None)
+
     membership = models.CharField(
         max_length=20,
         choices=Memberships.choices,
         default=None,
     )
+
     purchase_date = models.DateField(auto_now_add=True)
     start_date = models.DateField(null=True, blank=True)
     expiration_date = models.DateField(null=True, blank=True)
 
+    credits_remaining = models.IntegerField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.id}: {self.membership} for User {self.userId.email}"
     
+    @classmethod
+    def active(cls, userId): 
+        today = date.today() 
+        return cls.objects.filter(
+            start_date__lte = today,
+            userId = userId,
+        )
+        
+    
+    def has_credits(self): 
+        return "credit" in self.membership.lower() and self.credits_remaining > 0
+        
+    def use_credits(self):
+        if self.has_credits():
+            self.credits_remaining -= 1
+            if self.credits_remaining == 0:
+                self.expiration_date = date.today()
+            self.save()
+            return True 
+        return False 
+    
+    def return_credits(self): 
+        self.credits_remaining += 1
+        self.save()
+        return True
+
     def save(self, *args, **kwargs):
         """Auto-calculate expiration date based on membership type."""
         if self.start_date:
@@ -59,8 +89,13 @@ class MembershipsBought(models.Model):
                 self.expiration_date = self.start_date + relativedelta(months=6)
             elif self.membership == Memberships.TEN_CREDITS:
                 self.expiration_date = self.start_date + relativedelta(months=1)
+                if self.credits_remaining is None:
+                    self.credits_remaining = 10       # assign initial credit amount
             elif self.membership == Memberships.TWENTY_CREDITS:
                 self.expiration_date = self.start_date + relativedelta(months=2)
+                if self.credits_remaining is None:
+                    self.credits_remaining = 20       # assign initial credit amount
+
         super().save(*args, **kwargs)
 
 class userModel(AbstractBaseUser, PermissionsMixin):
@@ -89,6 +124,10 @@ class userModel(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
     objects = UserManager()
+
+    @classmethod
+    def allUsers(cls):
+        return cls.objects.all() 
 
     def __str__(self):
         return f"{self.id}"
@@ -125,6 +164,12 @@ class BookedClasses(models.Model):
     userId = models.ForeignKey(userModel, on_delete=models.CASCADE, related_name='booked_users', default=None)
     classId = models.ForeignKey(Classes, on_delete=models.CASCADE, related_name='bookings', default=None)
     booking_date = models.DateTimeField(auto_now_add=True)
+    membershipId = models.ForeignKey(MembershipsBought, on_delete=models.CASCADE, related_name='memberships', null=False, default='2')
+
+    @classmethod
+    def getMembershipUsed(cls, uId, cId): 
+        booking = cls.objects.filter(userId = uId, classId=cId)
+        return booking.membershipId
 
     def __str__(self):
         return f"{self.userId.id}: {self.userId.first_name} {self.userId.last_name} - {self.classId.classId}: {self.classId.class_name} {self.classId.class_date} {self.classId.start_time}"

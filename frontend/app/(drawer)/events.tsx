@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
@@ -114,7 +113,6 @@ export default function Events() {
 
   return (
     <Pressable style={{ flex: 1 }} onPress={resetSwipeTimer}>
-      <SafeAreaView style={styles.safe}>
         <FlatList
           ref={flatRef}
           data={photos}
@@ -220,7 +218,6 @@ export default function Events() {
             </Animated.View>
           </View>
         </Modal>
-      </SafeAreaView>
     </Pressable>
   );
 }
